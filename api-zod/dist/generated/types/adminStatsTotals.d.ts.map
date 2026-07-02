@@ -1,1 +1,0 @@
-{"version":3,"file":"adminStatsTotals.d.ts","sourceRoot":"","sources":["../../../src/generated/types/adminStatsTotals.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,MAAM,gBAAgB,GAAG;IAC7B,QAAQ,EAAE,MAAM,CAAC;IACjB,SAAS,EAAE,MAAM,CAAC;IAClB,OAAO,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,MAAM,CAAC;IAChB,QAAQ,EAAE,MAAM,CAAC;IACjB,UAAU,EAAE,MAAM,CAAC;CACpB,CAAC"}

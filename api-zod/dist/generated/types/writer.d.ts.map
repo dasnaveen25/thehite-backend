@@ -1,1 +1,0 @@
-{"version":3,"file":"writer.d.ts","sourceRoot":"","sources":["../../../src/generated/types/writer.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,iBAAiB,CAAC;AAErD,MAAM,MAAM,MAAM,GAAG,aAAa,GAAG;IACnC,QAAQ,CAAC,EAAE,IAAI,CAAC;IAChB,WAAW,CAAC,EAAE,OAAO,CAAC;CACvB,CAAC"}

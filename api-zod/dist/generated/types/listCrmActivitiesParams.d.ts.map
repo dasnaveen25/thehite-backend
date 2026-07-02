@@ -1,1 +1,0 @@
-{"version":3,"file":"listCrmActivitiesParams.d.ts","sourceRoot":"","sources":["../../../src/generated/types/listCrmActivitiesParams.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,MAAM,uBAAuB,GAAG;IACtC,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,cAAc,CAAC,EAAE,MAAM,CAAC;IACxB,IAAI,CAAC,EAAE,MAAM,CAAC;IACd,KAAK,CAAC,EAAE,MAAM,CAAC;CACd,CAAC"}

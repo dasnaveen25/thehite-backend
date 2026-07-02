@@ -1,1 +1,0 @@
-{"version":3,"file":"articleList.d.ts","sourceRoot":"","sources":["../../../src/generated/types/articleList.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,kBAAkB,CAAC;AAEvD,MAAM,WAAW,WAAW;IAC1B,KAAK,EAAE,cAAc,EAAE,CAAC;IACxB,KAAK,EAAE,MAAM,CAAC;IACd,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,MAAM,CAAC,EAAE,MAAM,CAAC;IAChB,OAAO,CAAC,EAAE,OAAO,CAAC;CACnB"}

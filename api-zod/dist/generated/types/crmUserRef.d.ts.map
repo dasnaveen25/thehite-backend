@@ -1,1 +1,0 @@
-{"version":3,"file":"crmUserRef.d.ts","sourceRoot":"","sources":["../../../src/generated/types/crmUserRef.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,UAAU;IACzB,EAAE,EAAE,MAAM,CAAC;IACX,WAAW,EAAE,MAAM,CAAC;IACpB,gBAAgB;IAChB,KAAK,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;IACtB,gBAAgB;IAChB,eAAe,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;CACjC"}
