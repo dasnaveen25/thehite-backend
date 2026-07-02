@@ -62,4 +62,32 @@ router.post("/upload/writer", requireWriter, writerUpload.single("file"), (req, 
   res.json({ url: buildUrl(req, req.file.filename) });
 });
 
+// Delete a previously uploaded file (image/video removed from article body)
+router.delete("/upload/:filename", requireWriter, (req, res): void => {
+  const rawFilename = req.params.filename;
+  if (typeof rawFilename !== "string") {
+    res.status(400).json({ error: "Invalid filename" });
+    return;
+  }
+  const filename = path.basename(rawFilename);
+  if (filename !== rawFilename || !filename) {
+    res.status(400).json({ error: "Invalid filename" });
+    return;
+  }
+
+  const filePath = path.resolve(UPLOADS_DIR, filename);
+  if (!filePath.startsWith(UPLOADS_DIR + path.sep)) {
+    res.status(400).json({ error: "Invalid filename" });
+    return;
+  }
+
+  fs.unlink(filePath, (err) => {
+    if (err && err.code !== "ENOENT") {
+      res.status(500).json({ error: "Failed to delete file" });
+      return;
+    }
+    res.json({ success: true });
+  });
+});
+
 export default router;

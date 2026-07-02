@@ -95,6 +95,10 @@ export const articlesTable = pgTable(
     locationId: varchar("location_id").references(() => locationsTable.id, { onDelete: "set null" }),
     tags: jsonb("tags").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     moderationNote: text("moderation_note"),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    ogImageUrl: text("og_image_url"),
+    canonicalUrl: text("canonical_url"),
     isBreaking: boolean("is_breaking").notNull().default(false),
     isFeatured: boolean("is_featured").notNull().default(false),
     isPinned: boolean("is_pinned").notNull().default(false),
@@ -104,6 +108,7 @@ export const articlesTable = pgTable(
     shareCount: integer("share_count").notNull().default(0),
     bookmarkCount: integer("bookmark_count").notNull().default(0),
     publishedAt: timestamp("published_at", { withTimezone: true }),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -115,7 +120,54 @@ export const articlesTable = pgTable(
     index("idx_articles_category").on(t.categoryId),
     index("idx_articles_location").on(t.locationId),
     index("idx_articles_writer").on(t.writerId),
+    index("idx_articles_scheduled").on(t.status, t.scheduledAt),
   ],
+);
+
+export const articleDraftsTable = pgTable(
+  "article_drafts",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    writerId: varchar("writer_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default(""),
+    summary: text("summary").notNull().default(""),
+    body: text("body").notNull().default(""),
+    lang: varchar("lang", { length: 4 }).notNull().default("hi"),
+    coverImageUrl: text("cover_image_url"),
+    youtubeUrl: text("youtube_url"),
+    categoryId: varchar("category_id"),
+    locationId: varchar("location_id"),
+    tags: jsonb("tags").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    isBreaking: boolean("is_breaking").notNull().default(false),
+    isFeatured: boolean("is_featured").notNull().default(false),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    ogImageUrl: text("og_image_url"),
+    canonicalUrl: text("canonical_url"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [index("idx_article_drafts_writer").on(t.writerId, t.updatedAt)],
+);
+
+export const articleRevisionsTable = pgTable(
+  "article_revisions",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    articleId: varchar("article_id")
+      .notNull()
+      .references(() => articlesTable.id, { onDelete: "cascade" }),
+    editedBy: varchar("edited_by").references(() => usersTable.id, { onDelete: "set null" }),
+    snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_article_revisions_article").on(t.articleId, t.createdAt)],
 );
 
 export const articleLikesTable = pgTable(

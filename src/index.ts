@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
+import { startScheduledArticlePublisher } from "./lib/scheduler";
 
 const rawPort = process.env["PORT"] || "5000";
 const port = Number(rawPort);
@@ -25,4 +26,5 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  startScheduledArticlePublisher();
 });

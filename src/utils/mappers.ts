@@ -21,6 +21,10 @@ export interface ArticleRow {
   locationId: string | null;
   tags: string[];
   moderationNote: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  ogImageUrl: string | null;
+  canonicalUrl: string | null;
   isBreaking: boolean;
   isFeatured: boolean;
   isPinned: boolean;
@@ -30,6 +34,7 @@ export interface ArticleRow {
   shareCount: number;
   bookmarkCount: number;
   publishedAt: Date | null;
+  scheduledAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,13 +101,17 @@ export function mapMyArticle(row: JoinedArticle) {
     coverImageUrl: a.coverImageUrl,
     youtubeUrl: a.youtubeUrl,
     lang: a.lang as "hi" | "en",
-    status: a.status as "draft" | "pending" | "published" | "rejected" | "changes_requested",
+    status: a.status as "draft" | "pending" | "scheduled" | "published" | "rejected" | "changes_requested",
     categoryId: a.categoryId,
     locationId: a.locationId,
     category: row.category ?? undefined,
     location: row.location ?? undefined,
     tags: a.tags ?? [],
     moderationNote: a.moderationNote,
+    seoTitle: a.seoTitle,
+    seoDescription: a.seoDescription,
+    ogImageUrl: a.ogImageUrl,
+    canonicalUrl: a.canonicalUrl,
     isBreaking: a.isBreaking,
     isFeatured: a.isFeatured,
     isPinned: a.isPinned,
@@ -110,6 +119,7 @@ export function mapMyArticle(row: JoinedArticle) {
     likeCount: a.likeCount,
     commentCount: a.commentCount,
     publishedAt: a.publishedAt,
+    scheduledAt: a.scheduledAt,
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,
   };

@@ -18,6 +18,19 @@ function transliterate(text: string): string {
   return result;
 }
 
+// Deterministic slugify with no random suffix — for user-supplied custom slugs.
+export function slugifyExact(text: string): string {
+  const base = transliterate(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 120);
+  return base;
+}
+
 export function slugify(text: string): string {
   const suffix = Math.random().toString(36).slice(2, 8);
   const base = transliterate(text)

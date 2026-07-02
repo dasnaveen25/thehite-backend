@@ -9,7 +9,6 @@ import meRouter from "./me";
 import writerRouter from "./writer";
 import adminRouter from "./admin";
 import adminModularRouter from "./admin/index";
-import adminCrmRouter from "./admin-crm";
 import seoRouter from "./seo";
 import uploadRouter from "./upload";
 
@@ -25,7 +24,6 @@ router.use(meRouter);
 router.use(writerRouter);
 router.use(adminRouter);
 router.use(adminModularRouter);
-router.use(adminCrmRouter);
 router.use(seoRouter);
 router.use(uploadRouter);
 
