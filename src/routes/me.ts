@@ -439,7 +439,7 @@ publicRouter.post("/me/writer-application", async (req, res): Promise<void> => {
   const [app] = await db
     .insert(writerApplicationsTable)
     .values({
-      userId: req.user!.id,
+      userId: req.user!.id ?? null,
       fullName: b.data.fullName,
       firstName: b.data.firstName ?? null,
       age: b.data.age ?? null,
