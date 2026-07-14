@@ -37,18 +37,27 @@ import {
 import { requireAuth } from "../middleware/requireRole";
 import { mapArticleCard } from "../utils/mappers";
 
+// Public router — no auth middleware
+const publicRouter: IRouter = Router();
+
+// Authenticated router — all routes require a valid token
 const router: IRouter = Router();
 router.use(requireAuth);
 
 async function loadProfile(userId: string) {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
   let [profile] = await db
     .select()
     .from(userProfilesTable)
     .where(eq(userProfilesTable.userId, userId));
   if (!profile) {
     const displayName =
-      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.email || "Reader";
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+      user?.email ||
+      "Reader";
     [profile] = await db
       .insert(userProfilesTable)
       .values({ userId, displayName })
@@ -68,11 +77,14 @@ router.get("/me/profile", async (req, res): Promise<void> => {
       profileImageUrl: user?.profileImageUrl,
       displayName: profile.displayName,
       role: profile.role,
-      isWriter: profile.role === "writer" || ["super_admin", "state_admin", "district_admin"].includes(profile.role),
+      isWriter:
+        profile.role === "writer" ||
+        ["super_admin", "state_admin", "district_admin"].includes(profile.role),
       bio: profile.bio,
       languagePref: (profile.languagePref as "hi" | "en") ?? "hi",
       notifPushEnabled: profile.notifPushEnabled,
-      notifBreakingScope: (profile.notifBreakingScope as "all" | "filtered") ?? "all",
+      notifBreakingScope:
+        (profile.notifBreakingScope as "all" | "filtered") ?? "all",
       notifFollowedWriters: profile.notifFollowedWriters,
     }),
   );
@@ -88,12 +100,19 @@ router.patch("/me/profile", async (req, res): Promise<void> => {
   const update: Record<string, unknown> = {};
   if (b.data.displayName !== undefined) update.displayName = b.data.displayName;
   if (b.data.bio !== undefined) update.bio = b.data.bio;
-  if (b.data.languagePref !== undefined) update.languagePref = b.data.languagePref;
-  if (b.data.notifPushEnabled !== undefined) update.notifPushEnabled = b.data.notifPushEnabled;
-  if (b.data.notifBreakingScope !== undefined) update.notifBreakingScope = b.data.notifBreakingScope;
-  if (b.data.notifFollowedWriters !== undefined) update.notifFollowedWriters = b.data.notifFollowedWriters;
+  if (b.data.languagePref !== undefined)
+    update.languagePref = b.data.languagePref;
+  if (b.data.notifPushEnabled !== undefined)
+    update.notifPushEnabled = b.data.notifPushEnabled;
+  if (b.data.notifBreakingScope !== undefined)
+    update.notifBreakingScope = b.data.notifBreakingScope;
+  if (b.data.notifFollowedWriters !== undefined)
+    update.notifFollowedWriters = b.data.notifFollowedWriters;
   if (Object.keys(update).length) {
-    await db.update(userProfilesTable).set(update).where(eq(userProfilesTable.userId, req.user!.id));
+    await db
+      .update(userProfilesTable)
+      .set(update)
+      .where(eq(userProfilesTable.userId, req.user!.id));
   }
   const { user, profile } = await loadProfile(req.user!.id);
   res.json(
@@ -105,11 +124,14 @@ router.patch("/me/profile", async (req, res): Promise<void> => {
       profileImageUrl: user?.profileImageUrl,
       displayName: profile.displayName,
       role: profile.role,
-      isWriter: profile.role === "writer" || ["super_admin", "state_admin", "district_admin"].includes(profile.role),
+      isWriter:
+        profile.role === "writer" ||
+        ["super_admin", "state_admin", "district_admin"].includes(profile.role),
       bio: profile.bio,
       languagePref: (profile.languagePref as "hi" | "en") ?? "hi",
       notifPushEnabled: profile.notifPushEnabled,
-      notifBreakingScope: (profile.notifBreakingScope as "all" | "filtered") ?? "all",
+      notifBreakingScope:
+        (profile.notifBreakingScope as "all" | "filtered") ?? "all",
       notifFollowedWriters: profile.notifFollowedWriters,
     }),
   );
@@ -146,17 +168,27 @@ router.put("/me/push-prefs", async (req, res): Promise<void> => {
 
   // Validate that requested ids exist
   const validCats = catIds.length
-    ? await db.select({ id: categoriesTable.id }).from(categoriesTable).where(inArray(categoriesTable.id, catIds))
+    ? await db
+        .select({ id: categoriesTable.id })
+        .from(categoriesTable)
+        .where(inArray(categoriesTable.id, catIds))
     : [];
   const validLocs = locIds.length
-    ? await db.select({ id: locationsTable.id }).from(locationsTable).where(inArray(locationsTable.id, locIds))
+    ? await db
+        .select({ id: locationsTable.id })
+        .from(locationsTable)
+        .where(inArray(locationsTable.id, locIds))
     : [];
   const okCats = validCats.map((r) => r.id);
   const okLocs = validLocs.map((r) => r.id);
 
   await db.transaction(async (tx) => {
-    await tx.delete(pushPrefsCategoriesTable).where(eq(pushPrefsCategoriesTable.userId, uid));
-    await tx.delete(pushPrefsLocationsTable).where(eq(pushPrefsLocationsTable.userId, uid));
+    await tx
+      .delete(pushPrefsCategoriesTable)
+      .where(eq(pushPrefsCategoriesTable.userId, uid));
+    await tx
+      .delete(pushPrefsLocationsTable)
+      .where(eq(pushPrefsLocationsTable.userId, uid));
     if (okCats.length) {
       await tx
         .insert(pushPrefsCategoriesTable)
@@ -192,7 +224,11 @@ router.post("/me/device-tokens", async (req, res): Promise<void> => {
     })
     .onConflictDoUpdate({
       target: deviceTokensTable.token,
-      set: { userId: req.user!.id, platform: b.data.platform ?? "expo", updatedAt: new Date() },
+      set: {
+        userId: req.user!.id,
+        platform: b.data.platform ?? "expo",
+        updatedAt: new Date(),
+      },
     });
   res.json(RegisterDeviceTokenResponse.parse({ registered: true }));
 });
@@ -205,7 +241,12 @@ router.delete("/me/device-tokens", async (req, res): Promise<void> => {
   }
   const result = await db
     .delete(deviceTokensTable)
-    .where(and(eq(deviceTokensTable.token, b.data.token), eq(deviceTokensTable.userId, req.user!.id)))
+    .where(
+      and(
+        eq(deviceTokensTable.token, b.data.token),
+        eq(deviceTokensTable.userId, req.user!.id),
+      ),
+    )
     .returning();
   res.json(UnregisterDeviceTokenResponse.parse({ deleted: result.length > 0 }));
 });
@@ -224,7 +265,10 @@ router.get("/me/alerts", async (req, res): Promise<void> => {
       category: categoriesTable,
     })
     .from(breakingPushDeliveriesTable)
-    .leftJoin(articlesTable, eq(articlesTable.id, breakingPushDeliveriesTable.articleId))
+    .leftJoin(
+      articlesTable,
+      eq(articlesTable.id, breakingPushDeliveriesTable.articleId),
+    )
     .leftJoin(categoriesTable, eq(categoriesTable.id, articlesTable.categoryId))
     .where(eq(breakingPushDeliveriesTable.userId, req.user!.id))
     .orderBy(desc(breakingPushDeliveriesTable.sentAt))
@@ -260,11 +304,17 @@ router.get("/me/bookmarks", async (req, res): Promise<void> => {
       profile: userProfilesTable,
     })
     .from(articleBookmarksTable)
-    .innerJoin(articlesTable, eq(articlesTable.id, articleBookmarksTable.articleId))
+    .innerJoin(
+      articlesTable,
+      eq(articlesTable.id, articleBookmarksTable.articleId),
+    )
     .leftJoin(categoriesTable, eq(categoriesTable.id, articlesTable.categoryId))
     .leftJoin(locationsTable, eq(locationsTable.id, articlesTable.locationId))
     .leftJoin(usersTable, eq(usersTable.id, articlesTable.writerId))
-    .leftJoin(userProfilesTable, eq(userProfilesTable.userId, articlesTable.writerId))
+    .leftJoin(
+      userProfilesTable,
+      eq(userProfilesTable.userId, articlesTable.writerId),
+    )
     .where(eq(articleBookmarksTable.userId, req.user!.id))
     .orderBy(desc(articleBookmarksTable.createdAt));
 
@@ -297,17 +347,26 @@ router.get("/me/follows", async (req, res): Promise<void> => {
     })
     .from(followsWritersTable)
     .innerJoin(usersTable, eq(usersTable.id, followsWritersTable.writerId))
-    .leftJoin(userProfilesTable, eq(userProfilesTable.userId, followsWritersTable.writerId))
+    .leftJoin(
+      userProfilesTable,
+      eq(userProfilesTable.userId, followsWritersTable.writerId),
+    )
     .where(eq(followsWritersTable.followerId, uid));
   const categories = await db
     .select()
     .from(followsCategoriesTable)
-    .innerJoin(categoriesTable, eq(categoriesTable.id, followsCategoriesTable.categoryId))
+    .innerJoin(
+      categoriesTable,
+      eq(categoriesTable.id, followsCategoriesTable.categoryId),
+    )
     .where(eq(followsCategoriesTable.userId, uid));
   const locations = await db
     .select()
     .from(followsLocationsTable)
-    .innerJoin(locationsTable, eq(locationsTable.id, followsLocationsTable.locationId))
+    .innerJoin(
+      locationsTable,
+      eq(locationsTable.id, followsLocationsTable.locationId),
+    )
     .where(eq(followsLocationsTable.userId, uid));
   res.json(
     ListMyFollowsResponse.parse({
@@ -334,7 +393,7 @@ router.get("/me/follows", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/me/writer-application", async (req, res): Promise<void> => {
+publicRouter.get("/me/writer-application", async (req, res): Promise<void> => {
   const [app] = await db
     .select()
     .from(writerApplicationsTable)
@@ -342,7 +401,9 @@ router.get("/me/writer-application", async (req, res): Promise<void> => {
     .orderBy(desc(writerApplicationsTable.createdAt))
     .limit(1);
   if (!app) {
-    res.status(404).json({ error: { code: "NOT_FOUND", message: "No application found" } });
+    res
+      .status(404)
+      .json({ error: { code: "NOT_FOUND", message: "No application found" } });
     return;
   }
   res.json({
@@ -354,7 +415,7 @@ router.get("/me/writer-application", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/me/writer-application", async (req, res): Promise<void> => {
+publicRouter.post("/me/writer-application", async (req, res): Promise<void> => {
   const b = ApplyToBeWriterBody.safeParse(req.body);
   if (!b.success) {
     res.status(400).json({ error: b.error.message });
@@ -363,15 +424,22 @@ router.post("/me/writer-application", async (req, res): Promise<void> => {
   const [existing] = await db
     .select()
     .from(writerApplicationsTable)
-    .where(and(eq(writerApplicationsTable.userId, req.user!.id), eq(writerApplicationsTable.status, "pending")));
+    .where(
+      and(
+        eq(writerApplicationsTable.userId, req.user!.id),
+        eq(writerApplicationsTable.status, "pending"),
+      ),
+    );
   if (existing) {
-    res.status(409).json({ error: { code: "EXISTS", message: "Application already pending" } });
+    res.status(409).json({
+      error: { code: "EXISTS", message: "Application already pending" },
+    });
     return;
   }
   const [app] = await db
     .insert(writerApplicationsTable)
     .values({
-      userId: req.user!.id,
+      userId: req.user!.id ?? null,
       fullName: b.data.fullName,
       firstName: b.data.firstName ?? null,
       age: b.data.age ?? null,
@@ -392,4 +460,8 @@ router.post("/me/writer-application", async (req, res): Promise<void> => {
   });
 });
 
-export default router;
+// Merge both routers and export
+const combinedRouter: IRouter = Router();
+combinedRouter.use(publicRouter);
+combinedRouter.use(router);
+export default combinedRouter;
