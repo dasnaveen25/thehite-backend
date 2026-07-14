@@ -13,6 +13,7 @@ import {
   articleBookmarksTable,
   followsWritersTable,
   validationReportSharesTable,
+  writerApplicationsTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import {
@@ -41,6 +42,7 @@ import {
   ListLocationResourcesResponse,
   SearchEverythingQueryParams,
   SearchEverythingResponse,
+  ApplyToBeWriterBody,
 } from "@workspace/api-zod";
 import { mapArticleCard, mapArticleDetail } from "../utils/mappers";
 
@@ -757,6 +759,81 @@ router.get("/donation-settings", async (_req, res): Promise<void> => {
   } catch (err) {
     console.error("public donation-settings error:", err);
     res.json({ upiAccounts: [], bankName: "", accountNumber: "", ifsc: "", accountName: "", donationEnabled: false, subtitle: "", contactEmail: "", thankYouMessage: "", campaigns: [] });
+  }
+});
+
+// Basic in-memory rate limit for the public application form: max 3 per IP per hour.
+const APPLY_RATE_WINDOW_MS = 60 * 60 * 1000;
+const APPLY_RATE_MAX = 3;
+const applyRateHits = new Map<string, number[]>();
+
+function applyRateLimited(ip: string): boolean {
+  const now = Date.now();
+  if (applyRateHits.size > 5000) {
+    for (const [key, times] of applyRateHits) {
+      if (times.every((t) => now - t >= APPLY_RATE_WINDOW_MS)) applyRateHits.delete(key);
+    }
+  }
+  const hits = (applyRateHits.get(ip) ?? []).filter((t) => now - t < APPLY_RATE_WINDOW_MS);
+  if (hits.length >= APPLY_RATE_MAX) {
+    applyRateHits.set(ip, hits);
+    return true;
+  }
+  hits.push(now);
+  applyRateHits.set(ip, hits);
+  return false;
+}
+
+// Public writer application – no login required. If the visitor happens to be
+// logged in we link the application to their account, otherwise userId is null.
+router.post("/writer-applications", async (req, res): Promise<void> => {
+  const b = ApplyToBeWriterBody.safeParse(req.body);
+  if (!b.success) {
+    res.status(400).json({ error: b.error.message });
+    return;
+  }
+  const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+  if (applyRateLimited(ip)) {
+    res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many applications. Please try again later." } });
+    return;
+  }
+  try {
+    const userId = req.user?.id ?? null;
+    if (userId) {
+      const [existing] = await db
+        .select()
+        .from(writerApplicationsTable)
+        .where(and(eq(writerApplicationsTable.userId, userId), eq(writerApplicationsTable.status, "pending")));
+      if (existing) {
+        res.status(409).json({ error: { code: "EXISTS", message: "Application already pending" } });
+        return;
+      }
+    }
+    const [app] = await db
+      .insert(writerApplicationsTable)
+      .values({
+        userId,
+        fullName: b.data.fullName,
+        firstName: b.data.firstName ?? null,
+        age: b.data.age ?? null,
+        phone: b.data.phone ?? null,
+        contactEmail: b.data.contactEmail ?? null,
+        education: b.data.education ?? null,
+        previousWork: b.data.previousWork ?? null,
+        profession: b.data.profession ?? null,
+        bio: b.data.bio,
+        sampleLink: b.data.sampleLink ?? null,
+      })
+      .returning();
+    res.status(201).json({
+      id: app.id,
+      fullName: app.fullName,
+      status: app.status,
+      createdAt: app.createdAt,
+    });
+  } catch (err) {
+    console.error("public writer-application error:", err);
+    res.status(500).json({ error: { code: "SUBMIT_FAILED", message: "Failed to submit application. Please try again." } });
   }
 });
 

@@ -324,9 +324,7 @@ export const reportsTable = pgTable("reports", {
 
 export const writerApplicationsTable = pgTable("writer_applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id")
-    .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => usersTable.id, { onDelete: "cascade" }),
   fullName: varchar("full_name", { length: 160 }).notNull(),
   firstName: varchar("first_name", { length: 80 }),
   age: integer("age"),

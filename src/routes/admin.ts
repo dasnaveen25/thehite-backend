@@ -122,19 +122,21 @@ async function loadFullWriterApplication(id: string) {
   if (!r) return null;
   return {
     id: r.app.id,
-    userId: r.app.userId,
+    userId: r.app.userId ?? undefined,
     fullName: r.app.fullName,
     bio: r.app.bio,
     sampleLink: r.app.sampleLink,
     status: r.app.status as "pending" | "approved" | "rejected",
     moderationNote: r.app.moderationNote,
     createdAt: r.app.createdAt,
-    user: {
-      id: r.user?.id ?? r.app.userId,
-      displayName: r.profile?.displayName ?? r.user?.email ?? "User",
-      profileImageUrl: r.user?.profileImageUrl,
-      verified: r.profile?.isVerified ?? false,
-    },
+    user: r.user
+      ? {
+          id: r.user.id,
+          displayName: r.profile?.displayName ?? r.user.email ?? "User",
+          profileImageUrl: r.user.profileImageUrl,
+          verified: r.profile?.isVerified ?? false,
+        }
+      : undefined,
   };
 }
 
@@ -695,7 +697,7 @@ router.get("/admin/writer-applications", async (req, res): Promise<void> => {
     ListWriterApplicationsResponse.parse(
       rows.map((r) => ({
         id: r.app.id,
-        userId: r.app.userId,
+        userId: r.app.userId ?? undefined,
         fullName: r.app.fullName,
         firstName: r.app.firstName,
         age: r.app.age,
@@ -709,12 +711,14 @@ router.get("/admin/writer-applications", async (req, res): Promise<void> => {
         status: r.app.status as "pending" | "approved" | "rejected",
         moderationNote: r.app.moderationNote,
         createdAt: r.app.createdAt,
-        user: {
-          id: r.user?.id ?? r.app.userId,
-          displayName: r.profile?.displayName ?? r.user?.email ?? "User",
-          profileImageUrl: r.user?.profileImageUrl,
-          verified: r.profile?.isVerified ?? false,
-        },
+        user: r.user
+          ? {
+              id: r.user.id,
+              displayName: r.profile?.displayName ?? r.user.email ?? "User",
+              profileImageUrl: r.user.profileImageUrl,
+              verified: r.profile?.isVerified ?? false,
+            }
+          : undefined,
       })),
     ),
   );
@@ -735,10 +739,12 @@ router.post("/admin/writer-applications/:id/approve", async (req, res): Promise<
     res.status(404).json({ error: { code: "NOT_FOUND", message: "Application not found" } });
     return;
   }
-  await db
-    .update(userProfilesTable)
-    .set({ role: "writer", isWriterApproved: true })
-    .where(eq(userProfilesTable.userId, app.userId));
+  if (app.userId) {
+    await db
+      .update(userProfilesTable)
+      .set({ role: "writer", isWriterApproved: true })
+      .where(eq(userProfilesTable.userId, app.userId));
+  }
   await audit(req.user!.id, "writer_application.approve", "writer_application", app.id);
   res.json(ApproveWriterApplicationResponse.parse(await loadFullWriterApplication(app.id)));
 });

@@ -34,7 +34,7 @@ router.post("/admin/reset-admin-password", async (req, res): Promise<void> => {
       .where(eq(usersTable.id, adminId))
       .limit(1);
 
-    if (!admin) {
+    if (!admin || !admin.email) {
       res.status(404).json({ error: "Admin user not found" });
       return;
     }
