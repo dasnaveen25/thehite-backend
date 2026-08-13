@@ -226,6 +226,51 @@ router.delete("/admin/articles/:id", async (req, res): Promise<void> => {
   res.json(AdminDeleteArticleResponse.parse({ id: deleted.id }));
 });
 
+// Admin video upload — creates and publishes the article in one step, no approval step involved.
+router.post("/admin/videos", async (req, res): Promise<void> => {
+  const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
+  const videoUrl = typeof req.body?.videoUrl === "string" ? req.body.videoUrl.trim() : "";
+  if (!title || title.length < 3) {
+    res.status(400).json({ error: { code: "INVALID_TITLE", message: "Title must be at least 3 characters" } });
+    return;
+  }
+  if (!videoUrl) {
+    res.status(400).json({ error: { code: "INVALID_VIDEO_URL", message: "videoUrl is required" } });
+    return;
+  }
+
+  const { rows: [maxRow] } = await db.execute(sql`
+    SELECT max(cast(substring(slug from '^video-([0-9]+)$') as integer)) as max_no
+    FROM ${articlesTable}
+    WHERE slug ~ '^video-[0-9]+$'
+  `);
+  const nextNo = (Number((maxRow as any)?.max_no) || 0) + 1;
+  const slug = `video-${nextNo}`;
+
+  const [a] = await db
+    .insert(articlesTable)
+    .values({
+      writerId: req.user!.id,
+      slug,
+      title,
+      summary: title,
+      body: `<p>${title}</p><p>वीडियो देखने के लिए ऊपर प्ले बटन दबाएँ।</p>`,
+      coverImageUrl: videoUrl,
+      lang: "hi",
+      tags: [],
+      status: "published",
+      publishedAt: new Date(),
+    })
+    .returning();
+
+  await audit(req.user!.id, "article.approve", "article", a.id);
+  if (a.isBreaking) {
+    void sendBreakingNewsPush({ articleId: a.id, slug: a.slug, title: a.title, summary: a.summary, categoryId: a.categoryId, locationId: a.locationId });
+  }
+  void sendFollowedWriterPush({ articleId: a.id, slug: a.slug, title: a.title, writerId: a.writerId });
+  res.status(201).json(ApproveArticleResponse.parse(await loadFullArticle(a.id)));
+});
+
 router.post("/admin/articles/:id/approve", async (req, res): Promise<void> => {
   const p = ApproveArticleParams.safeParse(req.params);
   if (!p.success) { res.status(400).json({ error: p.error.message }); return; }
