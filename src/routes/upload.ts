@@ -18,13 +18,29 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 200 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/"))
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype.startsWith("video/") ||
+      file.mimetype === "application/pdf"
+    )
       cb(null, true);
-    else cb(new Error("Only image and video files are allowed"));
+    else cb(new Error("Only image, video, and PDF files are allowed"));
   },
 });
+
+function handleUploadError(err: unknown, res: import("express").Response): void {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ error: "File is too large" });
+      return;
+    }
+    res.status(400).json({ error: err.message });
+    return;
+  }
+  res.status(400).json({ error: err instanceof Error ? err.message : "Upload failed" });
+}
 
 function buildUrl(_req: import("express").Request, filename: string) {
   if (process.env.BASE_URL) {
@@ -35,13 +51,16 @@ function buildUrl(_req: import("express").Request, filename: string) {
 
 const router: IRouter = Router();
 
-// Admin upload (images + videos, no size limit beyond multer)
-router.post("/admin/upload", requireAdmin, upload.single("file"), (req, res): void => {
-  if (!req.file) {
-    res.status(400).json({ error: "No file uploaded" });
-    return;
-  }
-  res.json({ url: buildUrl(req, req.file.filename) });
+// Admin upload (images + videos, up to 200 MB)
+router.post("/admin/upload", requireAdmin, (req, res): void => {
+  upload.single("file")(req, res, (err: unknown) => {
+    if (err) { handleUploadError(err, res); return; }
+    if (!req.file) {
+      res.status(400).json({ error: "No file uploaded" });
+      return;
+    }
+    res.json({ url: buildUrl(req, req.file.filename) });
+  });
 });
 
 // Writer upload — only images, max 10 MB
@@ -54,12 +73,15 @@ const writerUpload = multer({
   },
 });
 
-router.post("/upload/writer", requireWriter, writerUpload.single("file"), (req, res): void => {
-  if (!req.file) {
-    res.status(400).json({ error: "No file uploaded" });
-    return;
-  }
-  res.json({ url: buildUrl(req, req.file.filename) });
+router.post("/upload/writer", requireWriter, (req, res): void => {
+  writerUpload.single("file")(req, res, (err: unknown) => {
+    if (err) { handleUploadError(err, res); return; }
+    if (!req.file) {
+      res.status(400).json({ error: "No file uploaded" });
+      return;
+    }
+    res.json({ url: buildUrl(req, req.file.filename) });
+  });
 });
 
 // Delete a previously uploaded file (image/video removed from article body)
