@@ -223,7 +223,7 @@ router.delete("/admin/articles/:id", async (req, res): Promise<void> => {
   const [deleted] = await db.delete(articlesTable).where(eq(articlesTable.id, p.data.id)).returning();
   if (!deleted) { res.status(404).json({ error: { code: "NOT_FOUND", message: "Article not found" } }); return; }
   await audit(req.user!.id, "article.delete", "article", deleted.id);
-  res.json(AdminDeleteArticleResponse.parse({ id: deleted.id }));
+  res.json(AdminDeleteArticleResponse.parse({ deleted: true }));
 });
 
 // Admin video upload — creates and publishes the article in one step, no approval step involved.
